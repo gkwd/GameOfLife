@@ -10,6 +10,67 @@
 
 using namespace std;
 
+const int SCREEN_WIDTH = 640;
+const int SCREEN_HEIGHT = 480;
+
+//The window we'll be rendering to
+SDL_Window* gWindow = NULL;
+
+//The surface contained by the window
+SDL_Surface* gScreenSurface = NULL;
+
+//The image we will load and show on the screen
+SDL_Surface* gHelloWorld = NULL;
+
+void cls(HANDLE hConsole)
+{
+	COORD coordScreen = { 0, 0 };    // home for the cursor 
+	DWORD cCharsWritten;
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	DWORD dwConSize;
+
+	// Get the number of character cells in the current buffer. 
+
+	if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
+	{
+		return;
+	}
+
+	dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
+
+	// Fill the entire screen with blanks.
+
+	if (!FillConsoleOutputCharacter(hConsole,        // Handle to console screen buffer 
+		(TCHAR)' ',     // Character to write to the buffer
+		dwConSize,       // Number of cells to write 
+		coordScreen,     // Coordinates of first cell 
+		&cCharsWritten))// Receive number of characters written
+	{
+		return;
+	}
+
+	// Get the current text attribute.
+
+	if (!GetConsoleScreenBufferInfo(hConsole, &csbi))
+	{
+		return;
+	}
+
+	// Set the buffer's attributes accordingly.
+
+	if (!FillConsoleOutputAttribute(hConsole,         // Handle to console screen buffer 
+		csbi.wAttributes, // Character attributes to use
+		dwConSize,        // Number of cells to set attribute 
+		coordScreen,      // Coordinates of first cell 
+		&cCharsWritten)) // Receive number of characters written
+	{
+		return;
+	}
+
+	// Put the cursor at its home coordinates.
+
+	SetConsoleCursorPosition(hConsole, coordScreen);
+}
 
 
 void drawLife() {
@@ -82,44 +143,101 @@ void setInterval() {
 	}
 }
 
-int main1()
+//int main()
+//{
+//	setInterval();
+//	return 0;
+//}
+
+bool init()
 {
-	setInterval();
-	return 0;
+	//Initialization flag
+	bool success = true;
+
+	//Initialize SDL
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	{
+		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+		success = false;
+	}
+	else
+	{
+		//Create window
+		gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		if (gWindow == NULL)
+		{
+			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+			success = false;
+		}
+		else
+		{
+			//Get window surface
+			gScreenSurface = SDL_GetWindowSurface(gWindow);
+		}
+	}
+
+	return success;
+}
+
+bool loadMedia()
+{
+	//Loading success flag
+	bool success = true;
+
+	//Load splash image
+	gHelloWorld = SDL_LoadBMP("Images/background.bmp");
+	if (gHelloWorld == NULL)
+	{
+		printf("Unable to load image %s! SDL Error: %s\n", "02_getting_an_image_on_the_screen/hello_world.bmp", SDL_GetError());
+		success = false;
+	}
+
+	return success;
+}
+
+void close()
+{
+	//Deallocate surface
+	SDL_FreeSurface(gHelloWorld);
+	gHelloWorld = NULL;
+
+	//Destroy window
+	SDL_DestroyWindow(gWindow);
+	gWindow = NULL;
+
+	//Quit SDL subsystems
+	SDL_Quit();
 }
 
 int main(int argc, char* argv[])
 {
-
-	if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+	//Start up SDL and create window
+	if (!init())
 	{
-		cout << "SDL initialization failed. SDL Error: " << SDL_GetError();
+		printf("Failed to initialize!\n");
 	}
 	else
 	{
-		cout << "SDL initialization succeeded!";
+		//Load media
+		if (!loadMedia())
+		{
+			printf("Failed to load media!\n");
+		}
+		else
+		{
+			//Apply the image
+			SDL_BlitSurface(gHelloWorld, NULL, gScreenSurface, NULL);
+			//Update the surface
+			SDL_UpdateWindowSurface(gWindow);
+			//Wait two seconds
+			SDL_Delay(2000);
+		}
 	}
 
-	cin.get();
+	//Free resources and close SDL
+	close();
+
 	return 0;
 }
-
-
-// [4][4] [5][4] [6][4] 
-// [4][5] [5][5] [6][5]
-// [4][6] [5][6] [6][6] 
-
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
-
 
 
